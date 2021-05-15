@@ -15,6 +15,7 @@ namespace Lab3.Controllers
 {
 	[Route("api/[controller]")]
 	[ApiController]
+	[Produces("application/json")]
 	public class MoviesController : ControllerBase
 	{
 		private readonly ApplicationDbContext _context;
@@ -26,6 +27,16 @@ namespace Lab3.Controllers
 			_mapper = mapper;
 		}
 
+		/// <summary>
+		/// Retrieves a list of movies filtered by the interval when they were added, ordered descendingly by release year.
+		/// </summary>
+		/// <remarks>
+		/// Sample request:
+		/// GET /api/Movies/filter/2011-02-10T12:10:00_2022-01-01
+		/// </remarks>
+		/// <param name="startDate"></param>
+		/// <param name="endDate"></param>
+		/// <response code="200">The filtered movies.</response>
 		[HttpGet]
 		[Route("filter/{startDate}_{endDate}")]
 		public ActionResult<IEnumerable<MovieViewModel>> FilterMovies(string startDate, string endDate)
@@ -39,8 +50,18 @@ namespace Lab3.Controllers
 			return _mapper.Map<List<Movie>, List<MovieViewModel>>(movies);
 		}
 
-		// GET: api/Movies
+		/// <summary>
+		/// Retrieves a list of movies filtered by the interval when they were added, ordered descendingly by release year.
+		/// </summary>
+		/// <remarks>
+		/// Sample request:
+		/// GET /api/Movies?startDate=1997-12-31T23:59:00&endDate=2002-01-01
+		/// </remarks>
+		/// <param name="startDate"></param>
+		/// <param name="endDate"></param>
+		/// <response code="200">The filtered movies.</response>
 		[HttpGet]
+
 		public async Task<ActionResult<IEnumerable<MovieViewModel>>> GetMovies(string? startDate, string? endDate)
 		{
 			// the first movie ever was made in 1888, so we can use this as a default first value
@@ -54,9 +75,26 @@ namespace Lab3.Controllers
 			return _mapper.Map<List<Movie>, List<MovieViewModel>>(movies);
 		}
 
+		/// <summary>
+		/// Retrieves a movie by ID, including its comments.
+		/// </summary>
+		/// <remarks>
+		/// Sample request:
+		/// GET api/Movies/5/Comments
+		/// </remarks>
+		/// <param name="id">The movie ID</param>
+		/// <response code="200">The movie.</response>
+		/// <response code="404">If the movie is not found.</response>
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[HttpGet("{id}/Comments")]
 		public ActionResult<IEnumerable<MovieWithCommentsViewModel>> GetCommentsForMovie(int id)
 		{
+			if (!MovieExists(id))
+			{
+				return NotFound();
+			}
+
 			var query = _context.Movies.Where(m => m.Id == id)
 				.Include(m => m.Comments)
 				.Select(m => _mapper.Map<MovieWithCommentsViewModel>(m));
@@ -64,7 +102,18 @@ namespace Lab3.Controllers
 			return query.ToList();
 		}
 
-		// GET: api/Movies/5
+		/// <summary>
+		/// Retrieves a movie by ID.
+		/// </summary>
+		/// <remarks>
+		/// Sample request:
+		/// GET api/Movies/5
+		/// </remarks>
+		/// <param name="id">The movie ID</param>
+		/// <response code="200">The movie.</response>
+		/// <response code="404">If the movie is not found.</response>
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[HttpGet("{id}")]
 		public async Task<ActionResult<MovieViewModel>> GetMovie(int id)
 		{
@@ -78,10 +127,37 @@ namespace Lab3.Controllers
 			return _mapper.Map<MovieViewModel>(movie);
 		}
 
-		// PUT: api/Movies/5
-		// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+		/// <summary>
+		/// Updates a movie.
+		/// </summary>
+		/// <remarks>
+		/// Sample request:
+		///
+		/// PUT /api/Movies/5
+		/// {
+		///		"id": 5
+		///    "title": "Title",
+		///    "description": "Description!",
+		///    "genre": "Comedy",
+		///    "durationMinutes": 20,
+		///    "releaseYear": 2021,
+		///    "director": "Some Director",
+		///    "addedAt": "2021-08-10",
+		///    "rating": 2,
+		///    "watched": true
+		/// }
+		///
+		/// </remarks>
+		/// <param name="id">The movie ID</param>
+		/// <param name="movie">The movie body.</param>
+		/// <response code="204">If the item was successfully added.</response>
+		/// <response code="400">If the ID in the URL doesn't match the one in the body.</response>
+		/// <response code="404">If the item is not found.</response>
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[HttpPut("{id}")]
-		public async Task<IActionResult> PutMovie(int id, Movie movie)
+		public async Task<IActionResult> PutMovie(int id, MovieViewModel movie)
 		{
 			if (id != movie.Id)
 			{
@@ -93,7 +169,7 @@ namespace Lab3.Controllers
 				return BadRequest("A rating must be a value between 1 and 10");
 			}
 
-			_context.Entry(movie).State = EntityState.Modified;
+			_context.Entry(_mapper.Map<Movie>(movie)).State = EntityState.Modified;
 
 			try
 			{
@@ -114,17 +190,37 @@ namespace Lab3.Controllers
 			return NoContent();
 		}
 
-
-		// PUT: api/Movies/1/Comments/2
+		/// <summary>
+		/// Updates a movie comment.
+		/// </summary>
+		/// <remarks>
+		/// Sample request:
+		///
+		/// PUT: api/Movies/1/Comments/2
+		/// {
+		///    "text": "some comment",
+		///    "important": false,
+		///    "movieId": 3,
+		/// }
+		///
+		/// </remarks>
+		/// <param name="commentId">The comment ID</param>
+		/// <param name="comment">The comment body</param>
+		/// <response code="204">If the item was successfully added.</response>
+		/// <response code="400">If the ID in the URL doesn't match the one in the body.</response>
+		/// <response code="404">If the item is not found.</response>
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[HttpPut("{id}/Comments/{commentId}")]
-		public async Task<IActionResult> PutComment(int commentId, Comment comment)
+		public async Task<IActionResult> PutComment(int commentId, CommentViewModel comment)
 		{
 			if (commentId != comment.Id)
 			{
 				return BadRequest();
 			}
 
-			_context.Entry(comment).State = EntityState.Modified;
+			_context.Entry(_mapper.Map<Comment>(comment)).State = EntityState.Modified;
 
 			try
 			{
@@ -146,23 +242,67 @@ namespace Lab3.Controllers
 		}
 
 		// POST: api/Movies
-		// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+		/// <summary>
+		/// Creates a movie.
+		/// </summary>
+		/// <remarks>
+		/// Sample request:
+		///
+		/// POST /api/Movies
+		/// {
+		///    "title": "Title",
+		///    "description": "Description!",
+		///    "genre": "Comedy",
+		///    "durationMinutes": 20,
+		///    "releaseYear": 2021,
+		///    "director": "Some Director",
+		///    "addedAt": "2021-08-10",
+		///    "rating": 2,
+		///    "watched": true
+		/// }
+		///
+		/// </remarks>
+		/// <param name="movie"></param>
+		/// <response code="201">Returns the newly created item</response>
+		/// <response code="400">If the item is null or the rating is not a value between 1 and 10.</response>
+		[ProducesResponseType(StatusCodes.Status201Created)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
 		[HttpPost]
-		public async Task<ActionResult<Movie>> PostMovie(Movie movie)
+		public async Task<ActionResult<Movie>> PostMovie(MovieViewModel movie)
 		{
 			if (movie.Rating != null && (movie.Rating < 1 || movie.Rating > 10))
 			{
 				return BadRequest("A rating must be a value between 1 and 10");
 			}
 
-			_context.Movies.Add(movie);
+			_context.Movies.Add(_mapper.Map<Movie>(movie));
 			await _context.SaveChangesAsync();
 
 			return CreatedAtAction("GetMovie", new { id = movie.Id }, movie);
 		}
 
+		/// <summary>
+		/// Creates a movie comment.
+		/// </summary>
+		/// <remarks>
+		/// Sample request:
+		///
+		/// POST /api/Movies/3/Comments
+		/// {
+		///    "text": "some comment",
+		///    "important": false,
+		///    "movieId": 3,
+		/// }
+		///
+		/// </remarks>
+		/// <param name="id">The movie ID</param>
+		/// <param name="comment">The comment body</param>
+		/// <response code="200">If the item was successfully added.</response>
+		/// <response code="404">If movie is not found.</response>  
+		[ProducesResponseType(StatusCodes.Status201Created)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
 		[HttpPost("{id}/Comments")]
-		public IActionResult PostCommentForMovie(int id, Comment comment)
+		public IActionResult PostCommentForMovie(int id, CommentViewModel comment)
 		{
 			var movie = _context.Movies
 				.Where(m => m.Id == id)
@@ -173,7 +313,7 @@ namespace Lab3.Controllers
 				return NotFound();
 			}
 
-			movie.Comments.Add(comment);
+			movie.Comments.Add(_mapper.Map<Comment>(comment));
 			_context.Entry(movie).State = EntityState.Modified;
 			_context.SaveChanges();
 
@@ -181,6 +321,20 @@ namespace Lab3.Controllers
 		}
 
 		// DELETE: api/Movies/5
+		/// <summary>
+		/// Deletes a movie.
+		/// </summary>
+		/// <remarks>
+		/// Sample request:
+		///
+		/// DELETE api/Movies/1
+		///
+		/// </remarks>
+		/// <param name="id"></param>
+		/// <response code="204">No content if successful.</response>
+		/// <response code="404">If the movie doesn't exist.</response>  
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[HttpDelete("{id}")]
 		public async Task<IActionResult> DeleteMovie(int id)
 		{
@@ -197,11 +351,21 @@ namespace Lab3.Controllers
 		}
 
 
-		/// <summary>
-		/// Deletes a specific TodoItem.
-		/// </summary>
-		/// <param name="id"></param> 
 		// DELETE: api/Movies/1/Comments/5
+		/// <summary>
+		/// Deletes a movie comment.
+		/// </summary>
+		/// <remarks>
+		/// Sample request:
+		///
+		/// DELETE api/Movies/1/Comments/5
+		///
+		/// </remarks>
+		/// <param name="commentId"></param>
+		/// <response code="204">No content if successful.</response>
+		/// <response code="404">If the comment doesn't exist.</response>  
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[HttpDelete("{id}/Comments/{commentId}")]
 		public async Task<IActionResult> DeleteComment(int commentId)
 		{

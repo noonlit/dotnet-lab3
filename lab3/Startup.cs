@@ -65,22 +65,11 @@ namespace Lab3
 				c.SwaggerDoc("v1", new OpenApiInfo
 				{
 					Version = "v1",
-					Title = "ToDo API",
+					Title = "Movies API",
 					Description = "A simple example ASP.NET Core Web API",
-					TermsOfService = new Uri("https://example.com/terms"),
-					Contact = new OpenApiContact
-					{
-						Name = "Shayne Boyer",
-						Email = string.Empty,
-						Url = new Uri("https://twitter.com/spboyer"),
-					},
-					License = new OpenApiLicense
-					{
-						Name = "Use under LICX",
-						Url = new Uri("https://example.com/license"),
-					}
 				});
 
+				c.CustomSchemaIds(type => type.ToString());
 
 				// Set the comments path for the Swagger JSON and UI.
 				var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -92,6 +81,9 @@ namespace Lab3
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
 		public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 		{
+			app.UseCors(builder => builder.WithOrigins("http://localhost:44360")
+															.AllowAnyMethod()
+															.AllowAnyHeader());
 			app.UseSwagger();
 			app.UseSwaggerUI(c =>
 			{
