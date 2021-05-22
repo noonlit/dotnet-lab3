@@ -15,6 +15,10 @@ using System;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.IO;
+using FluentValidation.AspNetCore;
+using FluentValidation;
+using Lab3.ViewModels;
+using Lab3.Validators;
 
 namespace Lab3
 {
@@ -44,19 +48,19 @@ namespace Lab3
 
 			services.AddAuthentication()
 					.AddIdentityServerJwt();
-			services.AddControllersWithViews();
+			services.AddControllersWithViews()
+				.AddJsonOptions(options =>
+				{
+					options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+				})
+				.AddFluentValidation();
+
 			services.AddRazorPages();
 			// In production, the Angular files will be served from this directory
 			services.AddSpaStaticFiles(configuration =>
 			{
 				configuration.RootPath = "ClientApp/dist";
 			});
-
-			services.AddControllers()
-							.AddJsonOptions(options =>
-							{
-								options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-							});
 
 			services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
@@ -76,6 +80,9 @@ namespace Lab3
 				var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
 				c.IncludeXmlComments(xmlPath);
 			});
+
+			services.AddTransient<IValidator<MovieViewModel>, MovieValidator>();
+			services.AddTransient<IValidator<CommentViewModel>, CommentValidator>();
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

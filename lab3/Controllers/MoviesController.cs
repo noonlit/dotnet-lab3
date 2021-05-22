@@ -164,11 +164,6 @@ namespace Lab3.Controllers
 				return BadRequest();
 			}
 
-			if (movie.Rating != null && (movie.Rating < 1 || movie.Rating > 10))
-			{
-				return BadRequest("A rating must be a value between 1 and 10");
-			}
-
 			_context.Entry(_mapper.Map<Movie>(movie)).State = EntityState.Modified;
 
 			try
@@ -270,11 +265,6 @@ namespace Lab3.Controllers
 		[HttpPost]
 		public async Task<ActionResult<Movie>> PostMovie(MovieViewModel movie)
 		{
-			if (movie.Rating != null && (movie.Rating < 1 || movie.Rating > 10))
-			{
-				return BadRequest("A rating must be a value between 1 and 10");
-			}
-
 			_context.Movies.Add(_mapper.Map<Movie>(movie));
 			await _context.SaveChangesAsync();
 

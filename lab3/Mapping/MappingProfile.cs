@@ -7,10 +7,8 @@ namespace Lab3.Mapping
   {
     public MappingProfile()
     {
-      CreateMap<Movie, MovieViewModel>();
-      CreateMap<MovieViewModel, Movie>();
-      CreateMap<Comment, CommentViewModel>();
-      CreateMap<CommentViewModel, Comment>();
+      CreateMap<Movie, MovieViewModel>().ReverseMap();
+      CreateMap<Comment, CommentViewModel>().ReverseMap();
       CreateMap<Movie, MovieWithCommentsViewModel>();
     }
   }

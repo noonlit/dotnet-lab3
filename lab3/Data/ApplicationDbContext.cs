@@ -20,5 +20,23 @@ namespace Lab3.Data
             IOptions<OperationalStoreOptions> operationalStoreOptions) : base(options, operationalStoreOptions)
         {
         }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Movie>().Property(m => m.Title).IsRequired();
+            modelBuilder.Entity<Movie>().Property(m => m.Description).IsRequired();
+            modelBuilder.Entity<Movie>().Property(m => m.Genre).IsRequired();
+            modelBuilder.Entity<Movie>().Property(m => m.DurationMinutes).IsRequired();
+            modelBuilder.Entity<Movie>().Property(m => m.ReleaseYear).IsRequired();
+            modelBuilder.Entity<Movie>().Property(m => m.Director).IsRequired();
+            modelBuilder.Entity<Movie>().Property(m => m.AddedAt).IsRequired().HasDefaultValueSql("getdate()");
+            modelBuilder.Entity<Movie>().Property(m => m.Watched).IsRequired();
+
+            modelBuilder.Entity<Comment>().Property(c => c.Text).IsRequired();
+            modelBuilder.Entity<Comment>().Property(c => c.Important).IsRequired().HasDefaultValue(false);
+            modelBuilder.Entity<Comment>().Property(c => c.MovieId).IsRequired();
+        }
     }
 }
